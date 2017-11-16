@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto">
+
+    <item android:id="@+id/play_pause_icon"
+        android:title="@string/new_game"
+        android:icon="@drawable/ic_play_arrow_white_24dp"
+        app:showAsAction="ifRoom"/>
+    <item android:id="@+id/stop_icon"
+        android:title="@string/stop_game"
+        android:icon="@drawable/ic_stop_white_24dp"
+        app:showAsAction="ifRoom"/>
+    <item android:id="@+id/sound_icon"
+        android:title="@string/sound_ON"
+        android:icon="@drawable/ic_volume_off_white_24dp"
+        app:showAsAction="ifRoom"/>
+    <item android:id="@+id/settings_menu"
+        android:title="@string/settings"
+        app:showAsAction="never"/>
+
+</menu>
