@@ -1,4 +1,4 @@
-package com.jpinto.a2dslash;
+package com.jpinto.a2dslash.ui;
 
 import android.content.Context;
 import android.graphics.Bitmap;
@@ -8,6 +8,10 @@ import android.util.AttributeSet;
 import android.util.Log;
 import android.view.MotionEvent;
 import android.view.View;
+import android.widget.Button;
+import android.widget.TextView;
+
+import com.jpinto.a2dslash.R;
 import com.jpinto.a2dslash.characters.Knight;
 
 import java.util.ArrayList;
@@ -19,11 +23,21 @@ import stanford.androidlib.graphics.GSprite;
 
 public class GameCanvas extends GCanvas{
 
+    private static final String TAG = GameCanvas.class.getSimpleName();
+
     // frames per second of animation
     private static final int FRAMES_PER_SECOND = 30;
 
-    // downward acceleration due to gravity
-    private static final int GRAVITY_ACCELERATION = 1;
+    // state of Game
+    private static final int PLAYING = 1;
+    private static final int PAUSED = 2;
+    private static final int GAME_OVER = 3;
+    private static final int VICTORY = 4;
+    private static final int STOPPED = 5;
+
+    private int game_status = 0;
+    //Score Count
+    private int score_count = 0;
 
     // private fields
     private Knight knight;
@@ -59,6 +73,7 @@ public class GameCanvas extends GCanvas{
     private int frames = 0;
 
     ConstraintLayout cl_menu;
+    TextView tv_score;
 
     public GameCanvas(Context context, AttributeSet attrs) {
         super(context, attrs);
@@ -66,6 +81,7 @@ public class GameCanvas extends GCanvas{
 
     @Override
     public void init() {
+        Log.e(TAG,"init");
 
         /*GSprite.setDebug(true);*/
 
@@ -81,6 +97,40 @@ public class GameCanvas extends GCanvas{
         enemyArcher = new Knight();
 
         loadAssets();
+
+        final TextView test = (TextView) cl_menu.getChildAt(0);
+
+        Handler handler = new Handler();
+        handler.postDelayed(new Runnable() {
+            @Override
+            public void run() {
+
+                test.setText(R.string.countdown_3);
+            }
+        }, 1000);
+        handler.postDelayed(new Runnable() {
+            @Override
+            public void run() {
+
+                test.setText(R.string.countdown_2);
+            }
+        }, 2000);
+        handler.postDelayed(new Runnable() {
+            @Override
+            public void run() {
+
+                test.setText(R.string.countdown_1);
+            }
+        }, 3000);
+
+        handler.postDelayed(new Runnable() {
+            @Override
+            public void run() {
+
+                cl_menu.setVisibility(View.GONE);
+            startGame();
+            }
+        }, 4000);
     }
     /*
      * Called by the GCanvas internal animation loop each time the animation ticks,
@@ -143,6 +193,7 @@ public class GameCanvas extends GCanvas{
     private void enemyArcherCollision() {
         if (knight.collidesWith(enemyArcher) && isPlayerAttacking){
             enemyArcher.dieToLeft(archerDying);
+            scoreCount();
 
             Handler handler = new Handler();
             handler.postDelayed(new Runnable() {
@@ -167,6 +218,7 @@ public class GameCanvas extends GCanvas{
                         enemiesKnightsList.remove(enemy);
                         arrowList.remove(arrow);
                         arrow.remove();
+                        scoreCount();
 
                         if (enemy.getVelocityX()> 0){
                             enemy.dieToLeft(knightDying);
@@ -212,6 +264,7 @@ public class GameCanvas extends GCanvas{
 
                 enemy.dieToLeft(inverseKnightDying);
                 enemiesKnightsList.remove(enemy);
+                scoreCount();
 
                 Handler handler = new Handler();
                 handler.postDelayed(new Runnable() {
@@ -448,20 +501,26 @@ public class GameCanvas extends GCanvas{
 
     public void startGame() {
 
-        animate(FRAMES_PER_SECOND);
         knight = new Knight();
         knight.iddle(knightIddle);
         knight.setCollisionMargin( getHeight()/9,getHeight()/18);
         add(knight,getWidth()/2,(getHeight()*12)/21);
         playerDead = false;
+
+        resumeGame();
     }
 
     public void resumeGame(){
+
         animate(FRAMES_PER_SECOND);
+        game_status = PLAYING;
     }
 
     public void pauseGame() {
+
         animationStop();
+        game_status = PAUSED;
+        endGame();
     }
 
     public void stopGame() {
@@ -481,23 +540,87 @@ public class GameCanvas extends GCanvas{
                 remove(arrow);
             }
         }
-
         enemiesKnightsList.clear();
         arrowList.clear();
-
+        endGame();
     }
 
-    public void gameOver () {
+    private void scoreCount(){
+
+        score_count++;
+        String scoreText = "Score: " + score_count;
+        tv_score.setText(scoreText);
+
+        if (score_count>9){
+            victory();
+        }
+    }
+
+    private void victory(){
+
+        game_status = VICTORY;
         stopGame();
+    }
+
+    private void gameOver () {
+
+        game_status = GAME_OVER;
+        stopGame();
+    }
+
+    private void endGame(){
+
+        TextView test = (TextView) cl_menu.getChildAt(0);
+        Button btn_test=(Button) cl_menu.getChildAt(1);
+
+        btn_test.setVisibility(VISIBLE);
         cl_menu.setVisibility(VISIBLE);
-        MainActivity.setIsNewGame(true);
+
+        switch (game_status){
+            case PLAYING:
+                Log.d(TAG, "endGame: playing");
+                test.setText("YOU SHOULD BE PLAYING");
+                btn_test.setText("GO PLAY");
+                break;
+            case PAUSED:
+                Log.d(TAG, "endGame: paused");
+                test.setText(R.string.mode_pause);
+                btn_test.setText(R.string.resume_game);
+                break;
+            case STOPPED:
+                Log.d(TAG, "endGame: stopped");
+                test.setText(R.string.mode_stopped);
+                btn_test.setText(R.string.back_to_menu);
+                break;
+            case GAME_OVER:
+                Log.d(TAG, "endGame: game_over");
+                test.setText(R.string.mode_lose);
+                btn_test.setText(R.string.back_to_menu);
+                break;
+            case VICTORY:
+                Log.d(TAG, "endGame: victory");
+                test.setText(R.string.mode_win);
+                btn_test.setText(R.string.back_to_menu);
+                break;
+            default:
+                Log.d(TAG, "endGame: default");
+                break;
+        }
+        GameActivity.setIsNewGame();
     }
 
     public void setCl_menu(ConstraintLayout cl_menu) {
         this.cl_menu = cl_menu;
     }
 
-    private void loadAssets(){
+    public void setTextScore(TextView tv_score) {this.tv_score = tv_score;
+    }
+
+    public void setGame_status(int game_status) {
+        this.game_status = game_status;
+    }
+
+    synchronized private void loadAssets(){
         float knightHeight = getHeight()/3;
 
         knightWalking = new ArrayList<>();
@@ -818,4 +941,5 @@ public class GameCanvas extends GCanvas{
         archerArrow = SimpleBitmap.with(this).scaleToHeight(R.drawable.archer_arrow,getHeight()/3);
         inverseArrow = SimpleBitmap.with(this).scaleToHeight(R.drawable.archer_iv_arrow,getHeight()/3);
     }
+
 }

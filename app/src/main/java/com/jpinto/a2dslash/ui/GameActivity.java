@@ -1,8 +1,8 @@
-package com.jpinto.a2dslash;
+package com.jpinto.a2dslash.ui;
 
-import android.os.Bundle;
 import android.support.constraint.ConstraintLayout;
 import android.support.v7.app.AppCompatActivity;
+import android.os.Bundle;
 import android.view.Menu;
 import android.view.MenuInflater;
 import android.view.MenuItem;
@@ -10,27 +10,31 @@ import android.view.View;
 import android.view.Window;
 import android.view.WindowManager;
 import android.widget.TextView;
+
+import com.jpinto.a2dslash.R;
+
 import butterknife.BindView;
 import butterknife.ButterKnife;
 
-public class MainActivity extends AppCompatActivity {
+public class GameActivity extends AppCompatActivity {
 
-    private static boolean isPlaying =false;
-    private static boolean isNewGame =true;
+    private static final String TAG = GameActivity.class.getSimpleName();
+
+    private static boolean isPlaying =true;
+    private static boolean isNewGame =false;
     private static boolean soundON = false;
 
-    @BindView(R.id.gamearea)
+    @BindView(R.id.gameCanvas)
     GameCanvas mGameCanvas;
 
-    @BindView(R.id.cl_game_menu)
-    ConstraintLayout cl_menu;
+    @BindView(R.id.cl_game_status)
+    ConstraintLayout cl_game_status;
 
-    @BindView(R.id.tv_game_state)
-    TextView tv_start_new_game;
+    @BindView(R.id.tv_score)
+    TextView tv_score;
 
     MenuItem play_pause_icon;
     MenuItem sound_icon;
-
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -42,17 +46,12 @@ public class MainActivity extends AppCompatActivity {
                 WindowManager.LayoutParams.FLAG_FULLSCREEN);
 
         super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_main);
+
+        setContentView(R.layout.activity_game);
         ButterKnife.bind(this);
 
-        mGameCanvas.setCl_menu(cl_menu);
-
-        tv_start_new_game.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                playClick();
-            }
-        });
+        mGameCanvas.setTextScore(tv_score);
+        mGameCanvas.setCl_menu(cl_game_status);
     }
 
     public void playClick() {
@@ -60,29 +59,30 @@ public class MainActivity extends AppCompatActivity {
         if(isNewGame){
             //Set up a new game, we don't care about previous states
             mGameCanvas.startGame();
+            mGameCanvas.setCl_menu(cl_game_status);
+
             isNewGame = false;
         }else{
             mGameCanvas.resumeGame();
         }
 
-        play_pause_icon
-                .setIcon(R.drawable.ic_pause_white_24dp);
+        play_pause_icon.setIcon(R.drawable.ic_pause_white_24dp);
         isPlaying = true;
-        cl_menu.setVisibility(View.GONE);
+        cl_game_status.setVisibility(View.GONE);
     }
 
     public void pauseClick(MenuItem item) {
 
-        mGameCanvas.pauseGame();
+//        mGameCanvas.pauseGame();
         item.setIcon(R.drawable.ic_play_arrow_white_24dp);
         isPlaying = false;
-        tv_start_new_game.setText("Resume Game");
-        cl_menu.setVisibility(View.VISIBLE);
+
+        cl_game_status.setVisibility(View.VISIBLE);
     }
 
     public void stopClick() {
 
-        mGameCanvas.stopGame();
+//        mGameCanvas.stopGame();
 
         // resets game status
         isNewGame = true;
@@ -95,8 +95,7 @@ public class MainActivity extends AppCompatActivity {
         }
 
         //update and shows menu
-        tv_start_new_game.setText("Start New Game");
-        cl_menu.setVisibility(View.VISIBLE);
+        cl_game_status.setVisibility(View.VISIBLE);
     }
 
     public void changeSound(MenuItem item) {
@@ -108,6 +107,7 @@ public class MainActivity extends AppCompatActivity {
         }
         soundON = !soundON;
     }
+
 
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
@@ -142,20 +142,10 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
-    @Override
-    protected void onPause() {
-        super.onPause();
 
+    public static void setIsNewGame() {
 
-    }
-
-    @Override
-    protected void onDestroy() {
-        super.onDestroy();
-
-    }
-
-    public static void setIsNewGame(boolean isNewGame) {
-        MainActivity.isNewGame = isNewGame;
+        isPlaying = false;
+        isNewGame =true;
     }
 }

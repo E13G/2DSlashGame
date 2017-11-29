@@ -4,12 +4,29 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
+    android:id="@+id/root_parent"
+    android:background="@drawable/background"
     >
 
-    <com.jpinto.a2dslash.GameCanvas
-        android:id="@+id/gamearea"
-        android:layout_width="match_parent"
-        android:layout_height="match_parent" />
+    <TextView
+        android:id="@+id/tv_game_status"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginBottom="8dp"
+        android:layout_marginEnd="8dp"
+        android:layout_marginStart="8dp"
+        android:layout_marginTop="8dp"
+        android:fontFamily="monospace"
+        android:text="@string/countdown_start"
+        android:textColor="@color/colorBlack"
+        android:textSize="18sp"
+        android:textStyle="bold"
+        android:visibility="gone"
+        app:layout_constraintBottom_toBottomOf="@+id/cl_game_menu"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="@+id/cl_game_menu"
+        app:layout_constraintVertical_bias="0.40" />
 
     <android.support.constraint.ConstraintLayout
         android:id="@+id/cl_game_menu"
@@ -17,7 +34,7 @@
         android:layout_height="match_parent">
 
         <TextView
-            android:id="@+id/tv_game_state"
+            android:id="@+id/new_continue_game"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_margin="8dp"
@@ -46,7 +63,7 @@
             app:layout_constraintBottom_toTopOf="@+id/tv_settings"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toBottomOf="@id/tv_game_state"
+            app:layout_constraintTop_toBottomOf="@id/new_continue_game"
             />
 
         <TextView
@@ -65,26 +82,5 @@
             app:layout_constraintTop_toBottomOf="@id/tv_leaderboard"  />
 
     </android.support.constraint.ConstraintLayout>
-
-
-    <TextView
-        android:id="@+id/tv_countdown"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_marginBottom="8dp"
-        android:layout_marginEnd="8dp"
-        android:layout_marginStart="8dp"
-        android:layout_marginTop="8dp"
-        android:fontFamily="monospace"
-        android:text="@string/countDown"
-        android:textColor="@color/colorBlack"
-        android:textSize="18sp"
-        android:textStyle="bold"
-        android:visibility="gone"
-        app:layout_constraintBottom_toBottomOf="@+id/cl_game_menu"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toTopOf="@+id/cl_game_menu"
-        app:layout_constraintVertical_bias="0.40" />
 
 </android.support.constraint.ConstraintLayout>

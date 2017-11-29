@@ -1,15 +1,16 @@
 package com.jpinto.a2dslash.characters;
 
 import android.graphics.Bitmap;
+
 import java.util.ArrayList;
 import stanford.androidlib.graphics.GSprite;
 
 /*
  * Created by JPinto on 11/9/2017.
  */
-
 public class Knight extends GSprite implements KnightsActions {
 
+    private static final String LOG_TAG = Knight.class.getSimpleName();
     private static final int GRAVITY_ACCELERATION = 1;
 
     public Knight() {
