@@ -87,9 +87,12 @@ public class GameCanvas extends GCanvas{
     public void init() {
         Log.e(TAG,"init beginning");
 
-        /*GSprite.setDebug(true);*/
+        tv_game_status.setText(R.string.countdown_start);
 
-        GSprite background = new GSprite(SimpleBitmap.with(this).scale(R.drawable.background,getWidth(),getHeight()));
+//        GSprite.setDebug(true);
+
+        GSprite background = new GSprite(SimpleBitmap.with(this)
+                .scale(R.drawable.background,getWidth(),getHeight()));
         add(background);
 
         groundSurface = new GSprite(SimpleBitmap.with(this)
@@ -98,10 +101,26 @@ public class GameCanvas extends GCanvas{
 
         add(groundSurface);
 
-        enemyArcher = new Knight();
+        enemyArcher = new Knight(getWidth());
 
-        loadAssets();
+        Thread t1 = new Thread(new Thread(new Runnable() {
+            @Override
+            public void run() {
+                loadAssets();
+            }
+        }));
 
+        t1.run();
+        try {
+            t1.join();
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
+
+        endOfLoad();
+    }
+
+    private void endOfLoad() {
         Handler handler = new Handler();
         handler.postDelayed(new Runnable() {
             @Override
@@ -130,12 +149,13 @@ public class GameCanvas extends GCanvas{
             public void run() {
 
                 cl_menu.setVisibility(View.GONE);
-            startGame();
+                startGame();
             }
         }, 4000);
 
         Log.e(TAG,"init end");
     }
+
     /*
      * Called by the GCanvas internal animation loop each time the animation ticks,
      * 30 times per second.
@@ -149,11 +169,14 @@ public class GameCanvas extends GCanvas{
         if(game_status == PLAYING) {
             //collision
             if ((frames == 20 || frames % 100 == 0) && enemiesKnightsList.size() < 5) {
-                Knight enemy = new Knight();
+
+                Knight enemy = new Knight(getWidth());
                 if (frames % 200 == 0) {
+
                     enemy.walkToLeft(inverseKnightWalking);
                     add(enemy, getWidth(), (getHeight() * 12) / 21);
                 } else {
+
                     enemy.walkToRight(knightWalking);
                     add(enemy, 0, (getHeight() * 12) / 21);
                 }
@@ -161,15 +184,16 @@ public class GameCanvas extends GCanvas{
                 enemy.setCollisionMargin(getHeight() / 9, getHeight() / 18);
                 enemiesKnightsList.add(enemy);
 
-                enemy.putExtra("isAttacking", false);
+                enemy.putExtra("isAttacking"       , false);
                 enemy.putExtra("isAttackInCooldown", false);
-                enemy.putExtra("isDead", false);
+                enemy.putExtra("isDead"            , false);
             }
 
             if (frames % 400 == 0 && !contains(enemyArcher)) {
+
                 enemyArcher.walkToRight(archerWalking);
                 enemyArcher.setCollisionMargin(getHeight() / 9, getHeight() / 18);
-                enemyArcher.putExtra("isDead", false);
+                enemyArcher.putExtra("isDead"       , false);
                 add(enemyArcher, 0, (getHeight() * 12) / 21);
             }
 
@@ -272,9 +296,9 @@ public class GameCanvas extends GCanvas{
     private void enemyKnightCollision() {
         for (final Knight enemy : enemiesKnightsList){
 
-            Boolean isEnemyAttacking = enemy.getExtra("isAttacking");
+            Boolean isEnemyAttacking        = enemy.getExtra("isAttacking");
             Boolean isEnemyAttackInCooldown = enemy.getExtra("isAttackInCooldown");
-            Boolean isEnemyDead = enemy.getExtra("isDead");
+            Boolean isEnemyDead             = enemy.getExtra("isDead");
 
             //Player attack collision detector
             if (knight.collidesWith(enemy) && isPlayerAttacking && !isEnemyAttacking) {
@@ -315,9 +339,9 @@ public class GameCanvas extends GCanvas{
             //Enemy will start attacking
             int distanceBetweenPlayerAndEnemy = (int) (knight.getX() - enemy.getX());
 
-            boolean playerisInFrontEnemy =  distanceBetweenPlayerAndEnemy < 100
+            boolean playerisInFrontEnemy =  distanceBetweenPlayerAndEnemy < 75
                     && 0 < distanceBetweenPlayerAndEnemy;
-            boolean  playerisBehindEnemy =  distanceBetweenPlayerAndEnemy > -100
+            boolean  playerisBehindEnemy =  distanceBetweenPlayerAndEnemy > -75
                     && 0 >= distanceBetweenPlayerAndEnemy;
 
             if(  playerisBehindEnemy && !isEnemyAttackInCooldown ){
@@ -369,18 +393,14 @@ public class GameCanvas extends GCanvas{
         }, 150);
         handler.postDelayed(new Runnable() {
             @Override
-            public void run() {
-                enemy.setExtra("isAttacking",false);
-                enemy.walkToRight(knightWalking);
-            }
-        }, 850);
+            public void run() {enemy.setExtra("isAttacking",false);}}, 800);
+        handler.postDelayed(new Runnable() {
+            @Override
+            public void run() {enemy.walkToRight(knightWalking);}}, 1200);
 
         handler.postDelayed(new Runnable() {
             @Override
-            public void run() {
-                enemy.putExtra("isAttackInCooldown",false);
-            }
-        }, 5000);
+            public void run() {enemy.putExtra("isAttackInCooldown",false);}}, 5000);
     }
 
     private void jumpCollision() {
@@ -507,14 +527,14 @@ public class GameCanvas extends GCanvas{
     public boolean clickedEnemy(float x , float y){
         for (GSprite enemy :enemiesKnightsList){
 
-            if(enemy.getCollisionMarginBottom()+ enemy.getCenterY() > y
-                    && -enemy.getCollisionMarginTop() + enemy.getCenterY()  < y
+            if(enemy.getCollisionMarginBottom()+ enemy.getCenterY() + getWidth()/5 > y
+                    && -enemy.getCollisionMarginTop() + enemy.getCenterY()- getWidth()/5  < y
                     && enemy.getCollisionMarginRight() + enemy.getCenterX() > x
                     && -enemy.getCollisionMarginLeft() + enemy.getCenterX() < x) return true;
         }
 
-        if (enemyArcher.getCollisionMarginBottom()+ enemyArcher.getCenterY() > y
-                && -enemyArcher.getCollisionMarginTop() +   enemyArcher.getCenterY() < y
+        if (enemyArcher.getCollisionMarginBottom()+ enemyArcher.getCenterY() + getWidth()/5 > y
+                && -enemyArcher.getCollisionMarginTop() +   enemyArcher.getCenterY() - getWidth()/5 < y
                 &&  enemyArcher.getCollisionMarginRight() + enemyArcher.getCenterX() > x
                 && -enemyArcher.getCollisionMarginLeft() +  enemyArcher.getCenterX() < x){
             Log.d(TAG, "clickedEnemy: enemyArcher");
@@ -523,8 +543,8 @@ public class GameCanvas extends GCanvas{
 
         for (GSprite arrow :arrowList){
 
-            if(arrow.getCollisionMarginBottom()+ arrow.getCenterY() > y
-                    && -arrow.getCollisionMarginTop() + arrow.getCenterY()  < y
+            if(arrow.getCollisionMarginBottom()+ arrow.getCenterY() + getWidth()/5 > y
+                    && -arrow.getCollisionMarginTop() + arrow.getCenterY() - getWidth()/5  < y
                     && arrow.getCollisionMarginRight() + arrow.getCenterX() > x
                     && -arrow.getCollisionMarginLeft() + arrow.getCenterX() < x )return true;
 
@@ -534,7 +554,7 @@ public class GameCanvas extends GCanvas{
 
     public void startGame() {
 
-        knight = new Knight();
+        knight = new Knight(getWidth());
         knight.iddle(knightIddle);
         knight.setCollisionMargin( getHeight()/9,getHeight()/18);
 
@@ -913,7 +933,6 @@ public class GameCanvas extends GCanvas{
                 .scaleToHeight(R.drawable.archer_iv_shot_8, knightHeight));
         inverseArcherAttacking.add(SimpleBitmap.with(this)
                 .scaleToHeight(R.drawable.archer_iv_shot_9, knightHeight));
-
 
         archerWalking = new ArrayList<>();
         archerWalking.add(SimpleBitmap.with(this)

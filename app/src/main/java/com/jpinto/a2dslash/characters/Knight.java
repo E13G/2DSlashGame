@@ -11,9 +11,13 @@ import stanford.androidlib.graphics.GSprite;
 public class Knight extends GSprite implements KnightsActions {
 
     private static final String LOG_TAG = Knight.class.getSimpleName();
+
     private static final int GRAVITY_ACCELERATION = 1;
 
-    public Knight() {
+    private final int gameWidth;
+
+    public Knight(int gameWidth) {
+        this.gameWidth = gameWidth;
     }
 
     @Override
@@ -24,7 +28,7 @@ public class Knight extends GSprite implements KnightsActions {
 
     @Override
     public void walkToRight(ArrayList<Bitmap> bitmap) {
-        this.setVelocityX(5);
+        this.setVelocityX(gameWidth/250);
         this.setBitmaps(bitmap);
         this.setFramesPerBitmap(2);
         this.setLoopBitmaps(true);
@@ -32,7 +36,7 @@ public class Knight extends GSprite implements KnightsActions {
 
     @Override
     public void walkToLeft(ArrayList<Bitmap> bitmap) {
-        this.setVelocityX(-5);
+        this.setVelocityX(-gameWidth/250);
         this.setBitmaps(bitmap);
         this.setFramesPerBitmap(2);
         this.setLoopBitmaps(true);
@@ -57,7 +61,7 @@ public class Knight extends GSprite implements KnightsActions {
     @Override
     public void jumpToRight(ArrayList<Bitmap> bitmap) {
 
-        this.setVelocityX(5);
+        this.setVelocityX(gameWidth/250);
         this.setVelocityY(-15);
         this.setAccelerationY(GRAVITY_ACCELERATION);
         this.setBitmaps(bitmap);
@@ -68,7 +72,7 @@ public class Knight extends GSprite implements KnightsActions {
     @Override
     public void jumpToLeft(ArrayList<Bitmap> bitmap) {
 
-        this.setVelocityX(-5);
+        this.setVelocityX(-gameWidth/250);
         this.setVelocityY(-15);
         this.setAccelerationY(GRAVITY_ACCELERATION);
         this.setBitmaps(bitmap);
