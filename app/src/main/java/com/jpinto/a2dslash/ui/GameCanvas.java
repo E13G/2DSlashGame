@@ -1,6 +1,7 @@
 package com.jpinto.a2dslash.ui;
 
 import android.content.Context;
+import android.content.Intent;
 import android.graphics.Bitmap;
 import android.os.Handler;
 import android.support.constraint.ConstraintLayout;
@@ -72,8 +73,11 @@ public class GameCanvas extends GCanvas{
 
     private int frames = 0;
 
-    ConstraintLayout cl_menu;
-    TextView tv_score;
+    private ConstraintLayout cl_menu;
+    private TextView tv_score;
+    private Button btn_game_status;
+    private TextView tv_game_status;
+    private GameActivity gameActivity;
 
     public GameCanvas(Context context, AttributeSet attrs) {
         super(context, attrs);
@@ -81,7 +85,7 @@ public class GameCanvas extends GCanvas{
 
     @Override
     public void init() {
-        Log.e(TAG,"init");
+        Log.e(TAG,"init beginning");
 
         /*GSprite.setDebug(true);*/
 
@@ -98,28 +102,26 @@ public class GameCanvas extends GCanvas{
 
         loadAssets();
 
-        final TextView test = (TextView) cl_menu.getChildAt(0);
-
         Handler handler = new Handler();
         handler.postDelayed(new Runnable() {
             @Override
             public void run() {
 
-                test.setText(R.string.countdown_3);
+                tv_game_status.setText(R.string.countdown_3);
             }
         }, 1000);
         handler.postDelayed(new Runnable() {
             @Override
             public void run() {
 
-                test.setText(R.string.countdown_2);
+                tv_game_status.setText(R.string.countdown_2);
             }
         }, 2000);
         handler.postDelayed(new Runnable() {
             @Override
             public void run() {
 
-                test.setText(R.string.countdown_1);
+                tv_game_status.setText(R.string.countdown_1);
             }
         }, 3000);
 
@@ -131,6 +133,8 @@ public class GameCanvas extends GCanvas{
             startGame();
             }
         }, 4000);
+
+        Log.e(TAG,"init end");
     }
     /*
      * Called by the GCanvas internal animation loop each time the animation ticks,
@@ -142,57 +146,67 @@ public class GameCanvas extends GCanvas{
         super.onAnimateTick();
 
         frames++;
-        //collision
-        if((frames  == 20 || frames % 100 == 0) && enemiesKnightsList.size() < 5 ){
-            Knight enemy = new Knight();
-            if (frames%200 == 0 ){
-                enemy.walkToLeft(inverseKnightWalking);
-                add(enemy,getWidth(),(getHeight()*12)/21);
-            } else {
-                enemy.walkToRight(knightWalking);
-                add(enemy,0,(getHeight()*12)/21);
+        if(game_status == PLAYING) {
+            //collision
+            if ((frames == 20 || frames % 100 == 0) && enemiesKnightsList.size() < 5) {
+                Knight enemy = new Knight();
+                if (frames % 200 == 0) {
+                    enemy.walkToLeft(inverseKnightWalking);
+                    add(enemy, getWidth(), (getHeight() * 12) / 21);
+                } else {
+                    enemy.walkToRight(knightWalking);
+                    add(enemy, 0, (getHeight() * 12) / 21);
+                }
+
+                enemy.setCollisionMargin(getHeight() / 9, getHeight() / 18);
+                enemiesKnightsList.add(enemy);
+
+                enemy.putExtra("isAttacking", false);
+                enemy.putExtra("isAttackInCooldown", false);
+                enemy.putExtra("isDead", false);
             }
 
-            enemy.setCollisionMargin(getHeight()/9,getHeight()/18);
-            enemiesKnightsList.add(enemy);
+            if (frames % 400 == 0 && !contains(enemyArcher)) {
+                enemyArcher.walkToRight(archerWalking);
+                enemyArcher.setCollisionMargin(getHeight() / 9, getHeight() / 18);
+                enemyArcher.putExtra("isDead", false);
+                add(enemyArcher, 0, (getHeight() * 12) / 21);
+            }
 
-            enemy.putExtra("isAttacking",false);
-            enemy.putExtra("isAttackInCooldown",false);
-        }
+            if ((frames == 450 || (frames % 150 == 0 && frames > 450)) && contains(enemyArcher)) {
 
+                enemyArcher.attackToRight(archerAttacking);
+                GSprite Arrow = new GSprite();
+                Arrow.setVelocityX(10);
+                Arrow.setBitmap(archerArrow);
+                Arrow.setCollisionMargin(getHeight() / 10, getHeight() / 7);
+                add(Arrow, enemyArcher.getX() + enemyArcher.getWidth() / 10, enemyArcher.getY());
+                arrowList.add(Arrow);
+            }
 
-        if (frames % 400 == 0 && !contains(enemyArcher)) {
-            enemyArcher.walkToRight(archerWalking);
-            enemyArcher.setCollisionMargin(getHeight() / 9, getHeight() / 18);
-            add(enemyArcher, 0, (getHeight() * 12) / 21);
-        }
+            if (enemiesKnightsList.size() > 0 && !playerDead) enemyKnightCollision();
 
-        if((frames == 450 || (frames % 150 == 0 && frames > 450)) && contains(enemyArcher)) {
-            enemyArcher.attackToRight(archerAttacking);
-            GSprite Arrow = new GSprite();
-            Arrow.setVelocityX(10);
-            Arrow.setBitmap(archerArrow);
-            Arrow.setCollisionMargin(getHeight() / 10, getHeight() / 7);
-            add(Arrow,enemyArcher.getX()+enemyArcher.getWidth()/10,enemyArcher.getY());
-            arrowList.add(Arrow);
-        }
+            if (arrowList.size() > 0 && (!playerDead || enemiesKnightsList.size() > 0))
+                enemyArrowCollision();
 
-        if (enemiesKnightsList.size()> 0 && !playerDead) enemyKnightCollision();
+            if (frames > 20 && contains(enemyArcher) && !playerDead) enemyArcherCollision();
 
-        if (arrowList.size()> 0 && (!playerDead || enemiesKnightsList.size()> 0))enemyArrowCollision();
-
-        if (frames> 20 && contains(enemyArcher) && !playerDead) enemyArcherCollision();
-
-        jumpCollision();
+            jumpCollision();
 
         /*if (enemiesKnightsList.size()> 0) enemyOutsidePlayingArea();*/
 
         /*if (arrowList.size()> 0) arrowOutsidePlayingArea();*/
+        }
     }
 
     private void enemyArcherCollision() {
-        if (knight.collidesWith(enemyArcher) && isPlayerAttacking){
+
+        boolean archerDead = enemyArcher.getExtra("isDead");
+
+        if (knight.collidesWith(enemyArcher) && isPlayerAttacking && !archerDead){
+
             enemyArcher.dieToLeft(archerDying);
+            enemyArcher.putExtra("isDead",true);
             scoreCount();
 
             Handler handler = new Handler();
@@ -206,7 +220,6 @@ public class GameCanvas extends GCanvas{
         }
     }
 
-
     private void enemyArrowCollision() {
 
         for (final GSprite arrow : arrowList){
@@ -218,6 +231,7 @@ public class GameCanvas extends GCanvas{
                         enemiesKnightsList.remove(enemy);
                         arrowList.remove(arrow);
                         arrow.remove();
+                        enemy.putExtra("isDead",true);
                         scoreCount();
 
                         if (enemy.getVelocityX()> 0){
@@ -241,9 +255,12 @@ public class GameCanvas extends GCanvas{
                 arrow.remove();
                 arrowList.remove(arrow);
                 break;
+
             }else if (knight.collidesWith(arrow) && isJumping){
                 break;
+
             }else if (knight.collidesWith(arrow) && !isPlayerAttacking && ! isJumping) {
+
                 arrow.remove();
                 arrowList.remove(arrow);
                 playerDies();
@@ -257,12 +274,14 @@ public class GameCanvas extends GCanvas{
 
             Boolean isEnemyAttacking = enemy.getExtra("isAttacking");
             Boolean isEnemyAttackInCooldown = enemy.getExtra("isAttackInCooldown");
+            Boolean isEnemyDead = enemy.getExtra("isDead");
 
             //Player attack collision detector
             if (knight.collidesWith(enemy) && isPlayerAttacking && !isEnemyAttacking) {
                 Log.wtf("Enemy Dead" , "It's a HIT");
 
                 enemy.dieToLeft(inverseKnightDying);
+                enemy.putExtra("isDead",true);
                 enemiesKnightsList.remove(enemy);
                 scoreCount();
 
@@ -319,8 +338,10 @@ public class GameCanvas extends GCanvas{
     public void playerDies(){
 
         if (knight.getVelocityX()>0){
+
             knight.dieToRight(knightDying);
         }else{
+
             knight.dieToLeft(inverseKnightDying);
         }
 
@@ -337,6 +358,7 @@ public class GameCanvas extends GCanvas{
     }
 
     public void enemyAttack(final Knight enemy){
+
         Handler handler = new Handler();
         handler.postDelayed(new Runnable() {
             @Override
@@ -362,6 +384,7 @@ public class GameCanvas extends GCanvas{
     }
 
     private void jumpCollision() {
+
         if(knight.collidesWith(groundSurface)){
             knight.setY((getHeight()*12)/21);
             knight.setVelocityY(0);
@@ -394,7 +417,7 @@ public class GameCanvas extends GCanvas{
     @Override
     public boolean onTouch(View v, MotionEvent event) {
 
-        if(!playerDead && isAnimated()) {
+        if(!playerDead && isAnimated() && game_status == PLAYING) {
 
             float x = event.getX();
             float y = event.getY();
@@ -402,31 +425,43 @@ public class GameCanvas extends GCanvas{
             //verify if its jumping
             isJumping = Math.round(knight.getY()) != getHeight() * 12 / 21;
 
-            boolean isRight = knight.getX() + knight.getWidth()/2 < x;
-            boolean isLeft = knight.getX() + knight.getWidth()/2 > x;
-            boolean isLower = y <= knight.getHeight()*1.5;
-            boolean isHigher = y > knight.getHeight()*1.5;
-            boolean clickDown = event.getAction() == MotionEvent.ACTION_DOWN;
-            boolean attack = false;
-            boolean enemyAlive = enemiesKnightsList.size()>0 || arrowList.size()>0 || contains(enemyArcher);
-            boolean close =  (x - knight.getCenterX() < 200) && (x - knight.getCenterX() > -200);
+            boolean isRight      = knight.getX() + knight.getWidth()/2 < x;
+            boolean isLeft       = knight.getX() + knight.getWidth()/2 > x;
+            boolean isLower      = y <= knight.getHeight()*1.5;
+            boolean isHigher     = y > knight.getHeight()*1.5;
+            boolean walkingRight = knight.getVelocityX()>0;
+            boolean walkingLeft  = knight.getVelocityX()<0;
+            boolean clickDown    = event.getAction() == MotionEvent.ACTION_DOWN;
+            boolean attack       = false;
+            boolean enemiesAlive = enemiesKnightsList.size()>0 || arrowList.size()>0
+                                    || contains(enemyArcher);
+            boolean close        = (x - knight.getCenterX() < 150) &&
+                                    (x - knight.getCenterX() > -150);
 
-            if(enemyAlive && !isPlayerAttacking && close) attack = clickedEnemy(x,y);
+            if(enemiesAlive && !isPlayerAttacking && close) attack = clickedEnemy(x,y);
 
-            if (isLeft && isHigher && !isJumping && clickDown && !isPlayerAttacking && !attack) {
+            if (isLeft && isHigher && !isJumping && clickDown && !isPlayerAttacking
+                    && !attack && !walkingLeft) {
+
                 // code to run when finger is pressed; begin walking
                 knight.walkToLeft(inverseKnightWalking);
 
-            } else if (isRight && isHigher && !isJumping && clickDown && !isPlayerAttacking && !attack) {
+            } else if (isRight && isHigher && !isJumping && clickDown
+                    && !isPlayerAttacking && !attack && !walkingRight) {
+
                 // lifted finger up; stop thrusting
                 knight.walkToRight(knightWalking);
 
-            } else if (isLeft && isLower && !isJumping && clickDown && !isPlayerAttacking && !attack) {
+            } else if (isLeft && isLower && !isJumping && clickDown
+                    && !isPlayerAttacking && !attack) {
+
                 //jumping
                 isJumping = true;
                 knight.jumpToLeft(inverseKnightJumping);
 
-            } else if (isRight && isLower && !isJumping && clickDown && !isPlayerAttacking && !attack) {
+            } else if (isRight && isLower && !isJumping && clickDown
+                    && !isPlayerAttacking && !attack) {
+
                 //jumping
                 isJumping = true;
                 knight.jumpToRight(knightJumping);
@@ -434,7 +469,6 @@ public class GameCanvas extends GCanvas{
             } else if (isLeft && attack && !isPlayerAttacking && !isJumping) {
 
                 knight.attackToLeft(inverseKnightAttacking);
-
                 Handler handler = new Handler();
                 handler.postDelayed(new Runnable() {
                     @Override
@@ -447,12 +481,11 @@ public class GameCanvas extends GCanvas{
                     public void run() {
                         isPlayerAttacking = false;
                     }
-                }, 850);
+                }, 800);
 
             } else if (isRight && attack && !isPlayerAttacking && !isJumping) {
 
                 knight.attackToRight(knightAttacking);
-
                 Handler handler = new Handler();
                 handler.postDelayed(new Runnable() {
                     @Override
@@ -465,7 +498,7 @@ public class GameCanvas extends GCanvas{
                     public void run() {
                         isPlayerAttacking = false;
                     }
-                }, 850);
+                }, 800);
             }
         }
         return super.onTouch(v, event);
@@ -474,27 +507,27 @@ public class GameCanvas extends GCanvas{
     public boolean clickedEnemy(float x , float y){
         for (GSprite enemy :enemiesKnightsList){
 
-            boolean enemyClicked = enemy.getCollisionMarginBottom()+ enemy.getCenterY() > y
+            if(enemy.getCollisionMarginBottom()+ enemy.getCenterY() > y
                     && -enemy.getCollisionMarginTop() + enemy.getCenterY()  < y
                     && enemy.getCollisionMarginRight() + enemy.getCenterX() > x
-                    && -enemy.getCollisionMarginLeft() + enemy.getCenterX() < x;
-
-            if (enemyClicked) return true;
+                    && -enemy.getCollisionMarginLeft() + enemy.getCenterX() < x) return true;
         }
 
         if (enemyArcher.getCollisionMarginBottom()+ enemyArcher.getCenterY() > y
                 && -enemyArcher.getCollisionMarginTop() +   enemyArcher.getCenterY() < y
                 &&  enemyArcher.getCollisionMarginRight() + enemyArcher.getCenterX() > x
-                && -enemyArcher.getCollisionMarginLeft() +  enemyArcher.getCenterX() < x) return true;
+                && -enemyArcher.getCollisionMarginLeft() +  enemyArcher.getCenterX() < x){
+            Log.d(TAG, "clickedEnemy: enemyArcher");
+            return true;
+        }
 
         for (GSprite arrow :arrowList){
 
-            boolean enemyClicked = arrow.getCollisionMarginBottom()+ arrow.getCenterY() > y
+            if(arrow.getCollisionMarginBottom()+ arrow.getCenterY() > y
                     && -arrow.getCollisionMarginTop() + arrow.getCenterY()  < y
                     && arrow.getCollisionMarginRight() + arrow.getCenterX() > x
-                    && -arrow.getCollisionMarginLeft() + arrow.getCenterX() < x;
+                    && -arrow.getCollisionMarginLeft() + arrow.getCenterX() < x )return true;
 
-            if (enemyClicked) return true;
         }
         return false;
     }
@@ -504,9 +537,9 @@ public class GameCanvas extends GCanvas{
         knight = new Knight();
         knight.iddle(knightIddle);
         knight.setCollisionMargin( getHeight()/9,getHeight()/18);
-        add(knight,getWidth()/2,(getHeight()*12)/21);
-        playerDead = false;
 
+        playerDead = false;
+        add(knight,getWidth()/2,(getHeight()*12)/21);
         resumeGame();
     }
 
@@ -524,6 +557,7 @@ public class GameCanvas extends GCanvas{
     }
 
     public void stopGame() {
+
         animationStop();
         frames = 0;
 
@@ -542,6 +576,7 @@ public class GameCanvas extends GCanvas{
         }
         enemiesKnightsList.clear();
         arrowList.clear();
+        score_count = 0;
         endGame();
     }
 
@@ -552,7 +587,13 @@ public class GameCanvas extends GCanvas{
         tv_score.setText(scoreText);
 
         if (score_count>9){
-            victory();
+            Handler handler = new Handler();
+            handler.postDelayed(new Runnable() {
+                @Override
+                public void run() {
+                    victory();
+                }
+            }, 750);
         }
     }
 
@@ -570,43 +611,59 @@ public class GameCanvas extends GCanvas{
 
     private void endGame(){
 
-        TextView test = (TextView) cl_menu.getChildAt(0);
-        Button btn_test=(Button) cl_menu.getChildAt(1);
-
-        btn_test.setVisibility(VISIBLE);
+        btn_game_status.setVisibility(VISIBLE);
         cl_menu.setVisibility(VISIBLE);
 
         switch (game_status){
             case PLAYING:
                 Log.d(TAG, "endGame: playing");
-                test.setText("YOU SHOULD BE PLAYING");
-                btn_test.setText("GO PLAY");
+                tv_game_status.setText("YOU SHOULD BE PLAYING");
+                btn_game_status.setText("GO PLAY");
                 break;
             case PAUSED:
                 Log.d(TAG, "endGame: paused");
-                test.setText(R.string.mode_pause);
-                btn_test.setText(R.string.resume_game);
+                tv_game_status.setText(R.string.mode_pause);
+                btn_game_status.setText(R.string.resume_game);
                 break;
             case STOPPED:
                 Log.d(TAG, "endGame: stopped");
-                test.setText(R.string.mode_stopped);
-                btn_test.setText(R.string.back_to_menu);
+                tv_game_status.setText(R.string.mode_stopped);
+                btn_game_status.setText(R.string.back_to_menu);
                 break;
             case GAME_OVER:
                 Log.d(TAG, "endGame: game_over");
-                test.setText(R.string.mode_lose);
-                btn_test.setText(R.string.back_to_menu);
+                tv_game_status.setText(R.string.mode_lose);
+                btn_game_status.setText(R.string.back_to_menu);
                 break;
             case VICTORY:
                 Log.d(TAG, "endGame: victory");
-                test.setText(R.string.mode_win);
-                btn_test.setText(R.string.back_to_menu);
+                tv_game_status.setText(R.string.mode_win);
+                btn_game_status.setText(R.string.back_to_menu);
                 break;
             default:
                 Log.d(TAG, "endGame: default");
                 break;
         }
-        GameActivity.setIsNewGame();
+        GameActivity.setNewGame();
+
+        btn_game_status.setOnClickListener(new OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                if (game_status == PAUSED ){
+
+                    resumeGame();
+                    cl_menu.setVisibility(GONE);
+                }else {
+
+                    returnToMenu();
+                }
+            }
+        });
+    }
+
+    private void returnToMenu() {
+        Intent returnMenu = new Intent(gameActivity,MainActivity.class);
+        gameActivity.startActivity(returnMenu);
     }
 
     public void setCl_menu(ConstraintLayout cl_menu) {
@@ -616,8 +673,20 @@ public class GameCanvas extends GCanvas{
     public void setTextScore(TextView tv_score) {this.tv_score = tv_score;
     }
 
+    public void setBtnStatus(Button btn_game_status) {
+        this.btn_game_status = btn_game_status;
+    }
+
+    public void setTextStatus(TextView tv_game_status) {
+        this.tv_game_status = tv_game_status;
+    }
+
     public void setGame_status(int game_status) {
         this.game_status = game_status;
+    }
+
+    public int getGame_status() {
+        return game_status;
     }
 
     synchronized private void loadAssets(){
@@ -891,7 +960,6 @@ public class GameCanvas extends GCanvas{
                 .scaleToHeight(R.drawable.archer_iv_walk_9, knightHeight));
 
 
-
         archerDying = new ArrayList<>();
         archerDying.add(SimpleBitmap.with(this)
                 .scaleToHeight(R.drawable.archer_die_0, knightHeight));
@@ -942,4 +1010,7 @@ public class GameCanvas extends GCanvas{
         inverseArrow = SimpleBitmap.with(this).scaleToHeight(R.drawable.archer_iv_arrow,getHeight()/3);
     }
 
+    public void setContext(GameActivity gameActivity) {
+        this.gameActivity = gameActivity;
+    }
 }

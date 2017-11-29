@@ -27,11 +27,11 @@ public class MainActivity extends AppCompatActivity {
     @BindView(R.id.root_parent)
     ConstraintLayout root_parent;
 
-    @BindView(R.id.tv_game_status)
-    TextView game_status;
-
     @BindView(R.id.cl_game_menu)
     ConstraintLayout cl_menu;
+
+    @BindView(R.id.tv_game_status)
+    TextView game_status;
 
     @BindView(R.id.new_continue_game)
     TextView tv_start_new_game;
