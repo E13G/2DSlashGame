@@ -41,8 +41,8 @@ public class GameCanvas extends GCanvas{
     private int score_count = 0;
 
     // private fields
-    private Knight knight;
-    private Knight enemyArcher;
+    private  Knight knight;
+    private  Knight enemyArcher;
     private GSprite groundSurface;
     private ArrayList<Knight> enemiesKnightsList = new ArrayList<>();
     private ArrayList<GSprite> arrowList = new ArrayList<>();
@@ -103,6 +103,8 @@ public class GameCanvas extends GCanvas{
 
         enemyArcher = new Knight(getWidth());
 
+        Log.e(TAG, "init: " + getWidth()/3 );
+
         Thread t1 = new Thread(new Thread(new Runnable() {
             @Override
             public void run() {
@@ -116,7 +118,6 @@ public class GameCanvas extends GCanvas{
         } catch (InterruptedException e) {
             e.printStackTrace();
         }
-
         endOfLoad();
     }
 
@@ -294,67 +295,67 @@ public class GameCanvas extends GCanvas{
     }
 
     private void enemyKnightCollision() {
-        for (final Knight enemy : enemiesKnightsList){
+        for (final Knight enemy : enemiesKnightsList) {
 
-            Boolean isEnemyAttacking        = enemy.getExtra("isAttacking");
+            Boolean isEnemyAttacking = enemy.getExtra("isAttacking");
             Boolean isEnemyAttackInCooldown = enemy.getExtra("isAttackInCooldown");
-            Boolean isEnemyDead             = enemy.getExtra("isDead");
+            Boolean isEnemyDead = enemy.getExtra("isDead");
 
-            //Player attack collision detector
-            if (knight.collidesWith(enemy) && isPlayerAttacking && !isEnemyAttacking) {
-                Log.wtf("Enemy Dead" , "It's a HIT");
+            if (!isEnemyDead) {
+                //Player attack collision detector
+                if (knight.collidesWith(enemy) && isPlayerAttacking && !isEnemyAttacking) {
+                    Log.wtf("Enemy Dead", "It's a HIT");
 
-                enemy.dieToLeft(inverseKnightDying);
-                enemy.putExtra("isDead",true);
-                enemiesKnightsList.remove(enemy);
-                scoreCount();
+                    enemy.dieToLeft(inverseKnightDying);
+                    enemy.putExtra("isDead", true);
+                    enemiesKnightsList.remove(enemy);
+                    scoreCount();
 
-                Handler handler = new Handler();
-                handler.postDelayed(new Runnable() {
-                    @Override
-                    public void run() {
-                        enemy.remove();
+                    Handler handler = new Handler();
+                    handler.postDelayed(new Runnable() {
+                        @Override
+                        public void run() {
+                            enemy.remove();
 
-                    }
-                }, 900);
-                break;
-            }
+                        }
+                    }, 900);
+                    break;
+                }
 
-            //Enemy attack collision detector
-            else if (knight.collidesWith(enemy) && !isPlayerAttacking && isEnemyAttacking && !parry) {
-                playerDies();
-            }
+                //Enemy attack collision detector
+                else if (knight.collidesWith(enemy) && !isPlayerAttacking && isEnemyAttacking && !parry) {
+                    playerDies();
+                } else if (knight.collidesWith(enemy) && isPlayerAttacking && isEnemyAttacking) {
+                    parry = true;
+                    Handler handler = new Handler();
+                    handler.postDelayed(new Runnable() {
+                        @Override
+                        public void run() {
+                            parry = false;
+                        }
+                    }, 1000);
+                }
 
-            else if (knight.collidesWith(enemy) && isPlayerAttacking && isEnemyAttacking){
-                parry = true;
-                Handler handler = new Handler();
-                handler.postDelayed(new Runnable() {
-                    @Override
-                    public void run() {
-                        parry = false;
-                    }
-                }, 1000);
-            }
+                //Enemy will start attacking
+                int distanceBetweenPlayerAndEnemy = (int) (knight.getX() - enemy.getX());
 
-            //Enemy will start attacking
-            int distanceBetweenPlayerAndEnemy = (int) (knight.getX() - enemy.getX());
+                boolean playerisInFrontEnemy = distanceBetweenPlayerAndEnemy < 75
+                        && 0 < distanceBetweenPlayerAndEnemy;
+                boolean playerisBehindEnemy = distanceBetweenPlayerAndEnemy > -75
+                        && 0 >= distanceBetweenPlayerAndEnemy;
 
-            boolean playerisInFrontEnemy =  distanceBetweenPlayerAndEnemy < 75
-                    && 0 < distanceBetweenPlayerAndEnemy;
-            boolean  playerisBehindEnemy =  distanceBetweenPlayerAndEnemy > -75
-                    && 0 >= distanceBetweenPlayerAndEnemy;
+                if (playerisBehindEnemy && !isEnemyAttackInCooldown) {
 
-            if(  playerisBehindEnemy && !isEnemyAttackInCooldown ){
+                    enemy.putExtra("isAttackInCooldown", true);
+                    enemy.attackToLeft(inverseKnightAttacking);
+                    enemyAttack(enemy);
+                }
+                if (playerisInFrontEnemy && !isEnemyAttackInCooldown) {
 
-                enemy.putExtra("isAttackInCooldown",true);
-                enemy.attackToLeft(inverseKnightAttacking);
-                enemyAttack(enemy);
-            }
-            if (playerisInFrontEnemy && !isEnemyAttackInCooldown){
-
-                enemy.putExtra("isAttackInCooldown",true);
-                enemy.attackToRight(knightAttacking);
-                enemyAttack(enemy);
+                    enemy.putExtra("isAttackInCooldown", true);
+                    enemy.attackToRight(knightAttacking);
+                    enemyAttack(enemy);
+                }
             }
         }
     }
@@ -710,7 +711,8 @@ public class GameCanvas extends GCanvas{
     }
 
     synchronized private void loadAssets(){
-        float knightHeight = getHeight()/3;
+
+        float knightHeight = getHeight()/3 < 200 ? 200 : getHeight()/3;
 
         knightWalking = new ArrayList<>();
         knightWalking.add(SimpleBitmap.with(this)
